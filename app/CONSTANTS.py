@@ -1,3 +1,6 @@
 USER_JSON = './Keys/USERS.json'
-DB_PATH = './UsersDB.db'
+DB_PATH = './assets/UsersDB.db'
+ADMIN_DB_SIGNATURE = './assets/admin_db_signature.txt'
+ADMIN_KEY_SIGNATURE = './assets/admin_key_signature.txt'
+ENCRYPTED_KEY = './assets/Encrypted_key.txt'
 RANDOM_KEY = b'WMm1d6po2RAguGz9-apOEBVI1PWL7OmVE0rWzPmjtLs='

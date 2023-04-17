@@ -1,0 +1,2 @@
+This is a file that I want to encrypt. 
+It contains super top secret stuff. 

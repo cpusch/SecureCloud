@@ -2,6 +2,7 @@ from CONSTANTS import *
 from cryptography.hazmat.primitives import serialization,hashes
 from cryptography.hazmat.primitives.asymmetric import padding,utils
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
 
 def _download_assets():
     return True
@@ -19,7 +20,7 @@ def list_files():
 def download_assets_and_verify(admin_public_key: str) -> bool:
     _download_assets()
 
-    admin_public_key = serialization.load_pem_private_key(admin_public_key.encode(),password=None)
+    admin_public_key = serialization.load_pem_public_key(admin_public_key.encode(),backend=default_backend())
     with open(ADMIN_DB_SIGNATURE,'rb') as file:
         db_signature = file.read()
     with open(ADMIN_KEY_SIGNATURE, 'rb') as file:

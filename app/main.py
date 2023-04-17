@@ -1,8 +1,10 @@
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from admin import add_user, remove_user
+from admin import add_user, remove_user,sign_db_and_key
 from connect_to_cloud import download_assets_and_verify
+from user import valid_username,upload_file,download_file
+import sys
 
 def generate_key_pair() -> tuple:
     key = rsa.generate_private_key(
@@ -21,19 +23,32 @@ def generate_key_pair() -> tuple:
     )
     return (private_key_bytes,public_key_bytes)    
 
+def get_input() -> str:
+    input_lines = []
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            break
+        else:
+            input_lines.append(line.strip())
+    return '\n'.join(input_lines)
 
 def main():
     print("Welcome to the Secure Cloud!")
-    admin_public_key = input("Please enter the admins public key to verify files: ")
-    if download_assets_and_verify():
+    print("Please enter the admins public key to verify files: ")
+
+    admin_public_key = get_input()
+    if download_assets_and_verify(admin_public_key):
+        print("\n\nFILES VALIDATED\n")
         while True:
             print("""
-        Please Choose a following Option (You can type 'home' at any time to return to this prompt or 'quit' to exit): 
+Please Choose a following Option (You can type 'home' at any time to return to this prompt or 'quit' to exit): 
 
-        1. Generate a key pair
-        2. Upload a File
-        3. Download a File
-        4. Admin
+1. Generate a key pair
+2. Upload a File
+3. Download a File
+4. Admin
         """)
             user_selection = input("Select 1,2,3, or 4: ")
 
@@ -44,19 +59,44 @@ def main():
                 print(f"{key_pair[1].decode()}\n")
 
             elif user_selection == '2':
-                upload_file()
+                file_path = input("\n Please Enter the full path of the file you would like to upload: ")
+                username = input("Please enter your username: ")
+                if valid_username(username):
+                    print("Please enter your private key: ")
+                    user_private_key = get_input()
+                    upload_file(file_path,username,user_private_key)
+                    print("\n\n FILES UPLOADED")
+                else: 
+                    print("Invalid Username\n")
+                    
+
             elif user_selection == '3':
-                download_file()
+                file_name = input("\n Please enter the file name you would like to download: ")
+                username = input("Please enter your username: ")
+                if valid_username(username):
+                    print("Please enter your private key: ")
+                    user_private_key = get_input()
+                    download_file(file_name, username, user_private_key)
+                    print("\n\nFile Downloaded")
+                else: 
+                    print("Invalid Username")
+
             elif user_selection == '4':
+                print("\nPlease enter the admin private key: ")
+                admin_private_key = get_input()
                 while True:
                     add_or_remove = input("\nWould you like to 'add' or 'remove' a user? ").lower()
                     if add_or_remove == 'add':
                         username = input("Username: ")
-                        user_public_key = input("Public Key: ")
-                        add_user(username, user_public_key)
+                        print("Public Key")
+                        user_public_key = get_input()
+                        add_user(username, user_public_key,admin_private_key)
+                        sign_db_and_key(admin_private_key)
                     elif add_or_remove == 'remove':
                         username = input("Username: ")
                         remove_user(username)
+                        sign_db_and_key(admin_private_key)
+                        
                     elif add_or_remove == 'home':
                         break
                     else:

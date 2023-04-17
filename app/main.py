@@ -7,6 +7,9 @@ from user import valid_username,upload_file,download_file
 import sys
 
 def generate_key_pair() -> tuple:
+    """
+    Creates a simple public/private key pair for someone to store somewhere securely
+    """
     key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
@@ -24,6 +27,9 @@ def generate_key_pair() -> tuple:
     return (private_key_bytes,public_key_bytes)    
 
 def get_input() -> str:
+    """
+    Allows for multiple line input to command line to allow for pasting in keys
+    """
     input_lines = []
     while True:
         try:
@@ -39,6 +45,7 @@ def main():
     print("Please enter the admins public key to verify files: ")
 
     admin_public_key = get_input()
+    # validates the key containing files with the admin signatures to verify no tampering
     if download_assets_and_verify(admin_public_key):
         print("\n\nFILES VALIDATED\n")
         while True:

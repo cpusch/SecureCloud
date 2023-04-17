@@ -5,6 +5,9 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 
 def _download_assets():
+    """
+    Downloads the files necessary for signature verification and the latest database. 
+    """
     return True
 
 def upload_file(filename:str):
@@ -18,6 +21,9 @@ def list_files():
 
 
 def download_assets_and_verify(admin_public_key: str) -> bool:
+    """
+    Verifies the downloaded auth files with the admins public key
+    """
     _download_assets()
 
     admin_public_key = serialization.load_pem_public_key(admin_public_key.encode(),backend=default_backend())

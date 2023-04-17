@@ -6,6 +6,9 @@ from CONSTANTS import *
 
 
 def search_db(query):
+    """
+    Allows for abstraction when searching the DB
+    """
     connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
     result = cursor.execute(query).fetchall()
@@ -15,11 +18,16 @@ def search_db(query):
 
 
 def add_user(username:str,user_public_key:str,admin_private_key:str): 
+    """
+    Enables the admin to add a user to the secure cloud. 
+    """
     loaded_user_public_key = serialization.load_pem_public_key(user_public_key.encode())
 
     admin_loaded_key = serialization.load_pem_private_key(admin_private_key.encode(),password=None)
     admin_info = search_db(f"SELECT * FROM Users WHERE USERNAME = 'admin'")
     random_key = admin_info[0][2]
+
+    # random key is extracted from admins db entry and then encrypted with new users public key. 
 
     random_key = admin_loaded_key.decrypt(
         random_key,
@@ -49,16 +57,25 @@ def add_user(username:str,user_public_key:str,admin_private_key:str):
 
 
 def remove_user(username:str):
+    """
+    Removes user from DB then resets the keys
+    """
     connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
     cursor.execute(f"DELETE FROM Users WHERE USERNAME = '{username}';")
     connection.commit()
     connection.close()
-    _reset_keys()
+    reset_keys()
 
-def _reset_keys() -> None:
-    # encrypts the random key with users public key
+def reset_keys() -> None:
+    """
+    When user is removed from group keys are reset. All encrypted entries of the random key for all users are also 
+    updated with new key. 
+    """
     def encrypt_random_key(user_public_key:bytes, random_key) -> bytes:
+        """
+        encrypts the random key with users public key
+        """
         user_public_key = serialization.load_pem_public_key(user_public_key)
         return user_public_key.encrypt(
             random_key,
@@ -71,9 +88,7 @@ def _reset_keys() -> None:
 
     # generate new keys and write them to encrypted key file
     new_encryption_key = Fernet.generate_key()
-    print(f"Encryption key: {new_encryption_key}")
     new_random_encryption_key = Fernet.generate_key()
-    print(f"Random Key: {new_random_encryption_key}")
     encrypted_encryption_key = Fernet(new_random_encryption_key).encrypt(new_encryption_key)
     with open(ENCRYPTED_KEY,'wb') as file:
         file.write(encrypted_encryption_key)
@@ -94,6 +109,11 @@ def _reset_keys() -> None:
     
 
 def sign_db_and_key(admin_private_key:str) -> None:
+    """
+    When admin updates the user list or keys are reset, function signs all changes for authentication. 
+    """
+
+    # reads the newly created keys and updated database to bytes and creates signature based off of that
     with open(DB_PATH,'rb') as file:
         db_bytes = file.read()
     with open(ENCRYPTED_KEY,'rb') as file:
@@ -129,6 +149,7 @@ def sign_db_and_key(admin_private_key:str) -> None:
         utils.Prehashed(chosen_hash)
     )
 
+    # new signatures written to file to be shared. 
     with open(ADMIN_DB_SIGNATURE,'wb') as file:
         file.write(db_sig)
     with open(ADMIN_KEY_SIGNATURE, 'wb') as file:
